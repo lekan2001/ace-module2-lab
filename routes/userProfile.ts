@@ -75,18 +75,20 @@ export function getUserProfile () {
         }
         username = eval(code) // eslint-disable-line no-eval
       } catch (err) {
-        username = '\\' + username
+        username = user.username
       }
     } else {
-      username = '\\' + username
+      username = user.username
+    }
+
+    if (user && username) {
+      user.username = username
     }
 
     const themeKey = config.get<string>('application.theme') as keyof typeof themes
     const theme = themes[themeKey] || themes['bluegrey-lightgreen']
 
-    if (username) {
-      template = template.replace(/_username_/g, username)
-    }
+    template = template.replace(/_username_/g, '!{username}')
     template = template.replace(/_emailHash_/g, security.hash(user?.email))
     template = template.replace(/_title_/g, entities.encode(config.get<string>('application.name')))
     template = template.replace(/_favicon_/g, favicon())
@@ -110,7 +112,7 @@ export function getUserProfile () {
         'Content-Security-Policy': CSP
       })
 
-      res.send(fn(user))
+      res.send(fn(Object.assign(user, { user, username })))
     } catch (err) {
       next(new Error('Blocked illegal activity by ' + req.socket.remoteAddress))
     }
